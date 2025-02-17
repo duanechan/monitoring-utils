@@ -25,6 +25,10 @@ func LoadConfig() (EmailConfig, error) {
 		return EmailConfig{}, fmt.Errorf("SMTP_USER environment variable not set")
 	}
 
+	if !IsValidEmail(smtpUser) {
+		return EmailConfig{}, fmt.Errorf("invalid SMTP email")
+	}
+
 	smtpPass := os.Getenv("SMTP_PASS")
 	if smtpPass == "" {
 		return EmailConfig{}, fmt.Errorf("SMTP_PASS environment variable not set")
@@ -38,6 +42,10 @@ func LoadConfig() (EmailConfig, error) {
 	fromEmail := os.Getenv("SENDER_EMAIL")
 	if fromEmail == "" {
 		return EmailConfig{}, fmt.Errorf("SENDER_EMAIL environment variable not set")
+	}
+
+	if !IsValidEmail(fromEmail) {
+		return EmailConfig{}, fmt.Errorf("invalid sender email")
 	}
 
 	ccUsername := os.Getenv("CC_NAME")

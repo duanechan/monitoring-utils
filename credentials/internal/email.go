@@ -2,14 +2,24 @@ package credentials
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/wneessen/go-mail"
 )
+
+func IsValidEmail(email string) bool {
+	regex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}(?:\.[a-zA-Z]{2,})?$`)
+	return regex.MatchString(email)
+}
 
 func SendEmail(recipient User) error {
 	config, err := LoadConfig()
 	if err != nil {
 		return err
+	}
+
+	if !IsValidEmail(recipient.Email) {
+		return fmt.Errorf("invalid recipient email")
 	}
 
 	message := mail.NewMsg()

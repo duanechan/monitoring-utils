@@ -32,7 +32,7 @@ func main() {
 				log.Fatalf("error: failed to read CSV file: %s", err)
 			}
 
-			*path = strings.TrimSpace(strings.ReplaceAll(strings.TrimSuffix(input, "\n"), "\r", ""))
+			*path = strings.TrimSpace(strings.ReplaceAll(strings.ReplaceAll(strings.TrimSuffix(input, "\n"), "\"", ""), "\r", ""))
 		}
 
 		recipients, err := getRecipients(*path)
@@ -43,7 +43,7 @@ func main() {
 		sent := 0
 		var wg sync.WaitGroup
 
-		for _, r := range recipients {
+		for i, r := range recipients {
 			wg.Add(1)
 			go func(r credentials.User) {
 				done := make(chan bool)
@@ -56,7 +56,7 @@ func main() {
 				go showLoadingBar(done)
 
 				if err := credentials.SendEmail(r); err != nil {
-					color.Red("\r✖ Failed to send credentials email: %s\n", err)
+					color.Red("\r✖ Sending credentials email to record (row) %d failed: %s\n", i+1, err)
 					done <- false
 					return
 				}
@@ -137,14 +137,32 @@ func getRecipients(filepath string) ([]credentials.User, error) {
 	}
 
 	recipients := []credentials.User{}
+	invalidEmails := map[int]string{}
 
 	recipientsData := strings.Split(string(bytes), "\n")
-	for _, d := range recipientsData {
+	for i, d := range recipientsData {
 		fields := strings.Split(d, ",")
+
+		name := strings.TrimSpace(strings.ReplaceAll(fields[0], "\r", ""))
+		email := strings.TrimSpace(strings.ReplaceAll(fields[1], "\r", ""))
+
+		if !credentials.IsValidEmail(email) {
+			invalidEmails[i+1] = email
+		}
+
 		recipients = append(recipients, credentials.User{
-			Name:  strings.TrimSpace(strings.ReplaceAll(fields[0], "\r", "")),
-			Email: strings.TrimSpace(strings.ReplaceAll(fields[1], "\r", "")),
+			Name:  name,
+			Email: email,
 		})
+	}
+
+	if len(invalidEmails) > 0 {
+		fmt.Println()
+		color.Yellow("There is/are %d invalid email/s in the file:\n", len(invalidEmails))
+		for k, v := range invalidEmails {
+			fmt.Printf("-> Record (row) %d: %s\n", k, v)
+		}
+		fmt.Println()
 	}
 
 	return recipients, nil
