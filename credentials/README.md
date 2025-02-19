@@ -1,4 +1,3 @@
-
 # **Credentials Helper**
 
 A command-line utility program, written in Go, that sends emails containing OfficeTimer credentials to new interns. It simplifies email creation and sending by allowing users to input a CSV file and use a default email layout.
@@ -6,7 +5,7 @@ A command-line utility program, written in Go, that sends emails containing Offi
 
 ![Credentials Helper Demo](https://i.imgur.com/colTSvk.gif)
 
-![](https://i.imgur.com/HFcY2xU.png)
+![Email Template](https://i.imgur.com/HFcY2xU.png)
 
 
 ## **Environment Variables**
@@ -74,10 +73,10 @@ The CSV file containing the list of recipients has only two columns: name and em
 
 Once the CSV file is read, it sends the credentials email to the records with a valid email address. Here is a CSV file with two valid emails and one invalid:
 
-![](https://i.imgur.com/g5qzePA.png)
+![Email Report 1](https://i.imgur.com/g5qzePA.png)
 
 If an email is invalid, the program will display the **line numbers of that invalid email**.
 
-![](https://i.imgur.com/ljCpKGP.png)
+![Email Report 2](https://i.imgur.com/ljCpKGP.png)
 
 The purpose of this feature is once we know where the bad records are, we can extract and put them in another CSV file where we validate and repeat the process.

@@ -14,6 +14,7 @@ type EmailConfig struct {
 	CC       User
 }
 
+// Reads .env file and returns the appropriate EmailConfig.
 func LoadConfig() (EmailConfig, error) {
 	err := godotenv.Load()
 	if err != nil {

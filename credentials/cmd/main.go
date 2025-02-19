@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	credentials "credentials/internal"
+	"encoding/csv"
 	"flag"
 	"fmt"
 	"log"
@@ -13,17 +13,20 @@ import (
 	"sync"
 	"time"
 
+	credentials "github.com/duanechan/monitoring-utils/credentials/internal"
 	"github.com/fatih/color"
 )
 
 func main() {
+	// Read -path flag
 	path := flag.String("path", "", "the file path to the list of recipients")
 	flag.Parse()
 
 	for {
-		clearTerminal()
-		header()
+		ClearTerminal()
+		Header()
 
+		// If path flag is empty, specify filepath on runtime
 		if *path == "" {
 			reader := bufio.NewReader(os.Stdin)
 			fmt.Printf("Filepath: ")
@@ -35,11 +38,13 @@ func main() {
 			*path = strings.TrimSpace(strings.ReplaceAll(strings.ReplaceAll(strings.TrimSuffix(input, "\n"), "\"", ""), "\r", ""))
 		}
 
-		recipients, err := getRecipients(*path)
+		// Parse recipient data
+		recipients, err := GetRecipients(*path)
 		if err != nil {
 			log.Fatalf("error: failed to read recipient data: %s", err)
 		}
 
+		// Send emails to each recipient
 		sent := 0
 		var wg sync.WaitGroup
 
@@ -53,10 +58,10 @@ func main() {
 					wg.Done()
 				}()
 
-				go showLoadingBar(done)
+				go ShowLoadingBar(done)
 
 				if err := credentials.SendEmail(r); err != nil {
-					color.Red("\r✖ Sending credentials email to record (row) %d failed: %s\n", i+1, err)
+					color.HiRed("\r✖ Sending credentials email to record (row) %d failed: %s\n", i+1, err)
 					done <- false
 					return
 				}
@@ -64,7 +69,7 @@ func main() {
 				done <- true
 				sent++
 
-				color.Green("\r✔ Credentials email successfully sent to %s\n", r)
+				color.HiGreen("\r✔ Credentials email successfully sent to %s\n", r)
 
 				time.Sleep(100 * time.Millisecond)
 
@@ -73,7 +78,8 @@ func main() {
 
 		wg.Wait()
 
-		if choice := generateReport(sent, len(recipients)); choice == "y" || choice == "Y" {
+		// Print report and ask the user to send another batch or not
+		if choice := GenerateReport(sent, len(recipients)); choice == "y" || choice == "Y" {
 			*path = ""
 			continue
 		} else if choice == "n" || choice == "N" {
@@ -82,13 +88,14 @@ func main() {
 	}
 }
 
-func generateReport(sentEmails, recipientsLen int) string {
+// Prints a short report of the number of successful and failed sent emails.
+func GenerateReport(sentEmails, recipientsLen int) string {
 	reader := bufio.NewReader(os.Stdin)
 
 	color.RGB(103, 150, 191).Println(strings.Repeat("_", 75))
 	fmt.Println()
-	color.New(color.FgGreen).Printf("SUCCESS: %d     ", sentEmails)
-	color.New(color.FgRed).Println("FAILED: ", recipientsLen-sentEmails)
+	color.New(color.FgHiGreen).Printf("SUCCESS: %d     ", sentEmails)
+	color.New(color.FgHiRed).Println("FAILED: ", recipientsLen-sentEmails)
 	color.RGB(103, 150, 191).Println(strings.Repeat("_", 75))
 	fmt.Println()
 
@@ -101,7 +108,8 @@ func generateReport(sentEmails, recipientsLen int) string {
 	return strings.TrimSpace(strings.ReplaceAll(strings.TrimSuffix(input, "\n"), "\r", ""))
 }
 
-func header() {
+// Header text of the Credentials Helper program.
+func Header() {
 	color.RGB(103, 150, 191).Println(` _____              _            _   _       _       _   _      _                 
 /  __ \            | |          | | (_)     | |     | | | |    | |                
 | /  \/_ __ ___  __| | ___ _ __ | |_ _  __ _| |___  | |_| | ___| |_ __   ___ _ __ 
@@ -114,7 +122,8 @@ func header() {
 	fmt.Println()
 }
 
-func clearTerminal() error {
+// Clears the terminal window.
+func ClearTerminal() error {
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
 		cmd = exec.Command("cmd", "/c", "cls")
@@ -126,12 +135,19 @@ func clearTerminal() error {
 	return cmd.Run()
 }
 
-func getRecipients(filepath string) ([]credentials.User, error) {
+// Parses raw (CSV file) data and returns a slice of recipients.
+func GetRecipients(filepath string) ([]credentials.User, error) {
 	if !strings.HasSuffix(filepath, ".csv") {
 		return []credentials.User{}, fmt.Errorf("file is not CSV")
 	}
 
-	bytes, err := os.ReadFile(filepath)
+	file, err := os.Open(filepath)
+	if err != nil {
+		return []credentials.User{}, err
+	}
+
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
 	if err != nil {
 		return []credentials.User{}, err
 	}
@@ -139,12 +155,9 @@ func getRecipients(filepath string) ([]credentials.User, error) {
 	recipients := []credentials.User{}
 	invalidEmails := map[int]string{}
 
-	recipientsData := strings.Split(string(bytes), "\n")
-	for i, d := range recipientsData {
-		fields := strings.Split(d, ",")
-
-		name := strings.TrimSpace(strings.ReplaceAll(fields[0], "\r", ""))
-		email := strings.TrimSpace(strings.ReplaceAll(fields[1], "\r", ""))
+	for i, r := range records {
+		name := strings.TrimSpace(strings.ReplaceAll(r[0], "\r", ""))
+		email := strings.TrimSpace(strings.ReplaceAll(r[1], "\r", ""))
 
 		if !credentials.IsValidEmail(email) {
 			invalidEmails[i+1] = email
@@ -158,17 +171,26 @@ func getRecipients(filepath string) ([]credentials.User, error) {
 
 	if len(invalidEmails) > 0 {
 		fmt.Println()
-		color.Yellow("There is/are %d invalid email/s in the file:\n", len(invalidEmails))
+		color.HiYellow("There is/are %d invalid email/s in the file:\n", len(invalidEmails))
 		for k, v := range invalidEmails {
 			fmt.Printf("-> Record (row) %d: %s\n", k, v)
 		}
+
+		fmt.Printf(
+			"\n%s Press Enter to %s or CTRL+C to %s.",
+			color.New(color.FgHiYellow).Sprintf("Are you sure you want to continue?"),
+			color.New(color.FgHiYellow).Sprintf("continue"),
+			color.New(color.FgHiGreen).Sprintf("cancel"),
+		)
+		fmt.Scanln()
 		fmt.Println()
 	}
 
 	return recipients, nil
 }
 
-func showLoadingBar(done chan bool) {
+// Displays a loading animation when sending emails.
+func ShowLoadingBar(done chan bool) {
 	frames := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
@@ -177,11 +199,10 @@ func showLoadingBar(done chan bool) {
 	for {
 		select {
 		case <-done:
-			fmt.Print("\r") // Clear the line
+			fmt.Print("\r")
 			return
 		case <-ticker.C:
-			color.New(color.FgYellow).Printf("\rSending email... %s", frames[i])
-			// fmt.Printf("\rSending email... %s", frames[i])
+			color.New(color.FgHiYellow).Printf("\rSending email... %s", frames[i])
 			i = (i + 1) % len(frames)
 		}
 	}

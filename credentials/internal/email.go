@@ -7,12 +7,15 @@ import (
 	"github.com/wneessen/go-mail"
 )
 
+// Checks if given email address is valid.
 func IsValidEmail(email string) bool {
 	regex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}(?:\.[a-zA-Z]{2,})?$`)
 	return regex.MatchString(email)
 }
 
+// Sends the email to the given recipient.
 func SendEmail(recipient User) error {
+	// Read .env
 	config, err := LoadConfig()
 	if err != nil {
 		return err
@@ -22,24 +25,30 @@ func SendEmail(recipient User) error {
 		return fmt.Errorf("invalid recipient email")
 	}
 
+	// Create new email message
 	message := mail.NewMsg()
 
+	// CC
 	if config.CC.Exists() {
 		if err := message.AddCcFormat(config.CC.Name, config.CC.Email); err != nil {
 			return err
 		}
 	}
 
+	// Recipient
 	if err := message.AddToFormat(recipient.Name, recipient.Email); err != nil {
 		return err
 	}
 
+	// Sender
 	if err := message.FromFormat(config.From.Name, config.From.Email); err != nil {
 		return err
 	}
 
 	message.Subject("OfficeTimer Credentials for the Internship in Knowles Training Institute")
 	message.SetImportance(mail.ImportanceUrgent)
+
+	// Email body
 	message.SetBodyString(
 		mail.TypeTextHTML,
 		fmt.Sprintf(
@@ -54,6 +63,7 @@ func SendEmail(recipient User) error {
 		),
 	)
 
+	// SMTP server configuration
 	client, err := mail.NewClient("smtp.gmail.com",
 		mail.WithPort(587),
 		mail.WithSMTPAuth(mail.SMTPAuthPlain),
@@ -64,6 +74,7 @@ func SendEmail(recipient User) error {
 		return err
 	}
 
+	// Send email
 	if err := client.DialAndSend(message); err != nil {
 		return err
 	}
@@ -71,6 +82,7 @@ func SendEmail(recipient User) error {
 	return nil
 }
 
+// The default email template/layout.
 const Template string = `<!DOCTYPE html>
 <html>
 <head>

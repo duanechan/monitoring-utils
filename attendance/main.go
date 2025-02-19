@@ -1,38 +1,41 @@
 package main
 
 import (
+	"encoding/csv"
 	"log"
 	"os"
-	"strings"
 )
 
-func GetRecords(file string) Records {
-	bytes, err := os.ReadFile(file)
+func GetRecords(filepath string) (Records, error) {
+	file, err := os.Open(filepath)
 	if err != nil {
-		log.Fatalf("error: failed to read data.csv: %s", err)
+		return Records{}, err
 	}
 
-	data := strings.Split(string(bytes), "\n")
-	records := Records{}
-	for _, d := range data {
-		recordData := strings.Split(d, ",")
-		if len(recordData) < 4 || recordData[3] == "" {
-			recordData = append(recordData, "00:00:00")
-		}
-		record := NewRecord(
-			recordData[0],
-			recordData[1],
-			recordData[2],
-			recordData[3],
-		)
-
-		records = append(records, record)
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		return Records{}, err
 	}
 
-	return Search(records, Today)
+	var employees Records
+
+	for _, r := range records {
+		employees = append(employees, Record{
+			In:    r[2],
+			Out:   r[3],
+			Date:  r[0],
+			Email: r[1],
+		})
+	}
+
+	return Search(employees, Today), nil
 }
 
 func main() {
-	records := GetRecords("data.csv")
+	records, err := GetRecords("data.csv")
+	if err != nil {
+		log.Fatalf("error: failed to get records: %s", err)
+	}
 	records.Display()
 }

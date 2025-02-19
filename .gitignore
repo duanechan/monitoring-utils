@@ -1,4 +1,7 @@
 *.csv
+*.exe
+*_test.go
 .env
-/data
+
+*/data
 */tests
