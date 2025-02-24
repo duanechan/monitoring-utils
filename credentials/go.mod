@@ -3,6 +3,7 @@ module github.com/duanechan/monitoring-utils/credentials
 go 1.24.0
 
 require (
+	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.3.3
 	github.com/fatih/color v1.18.0
 	github.com/joho/godotenv v1.5.1
@@ -10,6 +11,7 @@ require (
 )
 
 require (
+	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/lipgloss v1.0.0 // indirect
 	github.com/charmbracelet/x/ansi v0.8.0 // indirect
