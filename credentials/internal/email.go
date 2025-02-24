@@ -107,7 +107,7 @@ const (
             <tr>
               <td align="center" valign="middle" style="padding: 20px 20px;">
                 <a href="https://www.knowlesti.ph" target="_blank" style="display: inline-block;">
-                  <img src="https://knowlesti.ph/wp-content/uploads/2021/02/ph-LOGO-1.png" width="180" alt="Knowles Training Institute" style="border: 0; display: block;">
+                  <img src="https://i.imgur.com/SbZbhxG.jpeg" width="180" alt="Knowles Training Institute" style="border: 0; display: block;">
                 </a>
               </td>
             </tr>
