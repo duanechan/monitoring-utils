@@ -5,7 +5,7 @@ A command-line utility program, written in Go, that sends emails containing Offi
 
 ![Credentials Helper Demo](https://i.imgur.com/colTSvk.gif)
 
-![Email Template](https://i.imgur.com/HFcY2xU.png)
+![Email Template](https://i.imgur.com/1fQbCEM.png)
 
 
 ## **Environment Variables**
