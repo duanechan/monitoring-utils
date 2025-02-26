@@ -46,16 +46,21 @@ func main() {
 		}
 
 		// Parse recipient data
-		recipients, invalids, duplicates, err := credentials.GetRecipients(*path)
+		records, err := credentials.ParseData(*path)
 		if err != nil {
 			log.Fatalf("error: failed to read recipient data: %s", err)
+		}
+
+		result := credentials.ValidateRecords(records)
+		if result.Invalids > 0 || result.Duplicates > 0 {
+			ContinuePrompt(result)
 		}
 
 		// Send emails to each recipient
 		sent := 0
 		var wg sync.WaitGroup
 
-		for i, r := range recipients {
+		for i, r := range result.Recipients {
 			e := credentials.Email{
 				Body:   credentials.DefaultTemplate,
 				To:     credentials.User{Name: r.Name, Email: r.Email},
@@ -92,13 +97,26 @@ func main() {
 		wg.Wait()
 
 		// Print report and ask the user to send another batch or not
-		if choice := GenerateReport(sent, invalids, duplicates); choice == "y" || choice == "Y" {
+		if choice := GenerateReport(sent, result.Invalids, result.Duplicates); choice == "y" || choice == "Y" {
 			*path = ""
 			continue
 		} else if choice == "n" || choice == "N" {
 			os.Exit(0)
 		}
 	}
+}
+
+func ContinuePrompt(result credentials.ParseResult) {
+	fmt.Println()
+	color.HiYellow("There is/are %d invalid email/s in the file:\n", result.Invalids)
+	fmt.Println(result.ValidationLog)
+	fmt.Printf(
+		"\nAre you sure you want to continue? Press Enter to %s or CTRL+C to %s.",
+		color.New(color.FgHiYellow).Sprintf("continue"),
+		color.New(color.FgHiGreen).Sprintf("cancel"),
+	)
+	fmt.Scanln()
+	fmt.Println()
 }
 
 // Prints a short report of the number of successful and failed sent emails.
@@ -113,9 +131,9 @@ func GenerateReport(sent, invalids, duplicates int) string {
 		color.New(color.FgHiYellow).Printf("Invalid: %d     ", invalids-duplicates)
 		color.RGB(128, 128, 128).Println("Ignored: ", duplicates)
 	}
+	fmt.Println()
 	color.RGB(103, 150, 191).Println(strings.Repeat("_", 75))
 	fmt.Println()
-
 	fmt.Printf("Would you like to send another batch? [Y/n]: ")
 	input, err := reader.ReadString('\n')
 	if err != nil {

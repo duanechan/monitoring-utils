@@ -1,4 +1,5 @@
 *.csv
+*.xlsx
 *.exe
 *_test.go
 .env

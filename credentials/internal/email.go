@@ -106,8 +106,8 @@ const (
             <!-- Logo Section -->
             <tr>
               <td align="center" valign="middle" style="padding: 20px 20px;">
-                <a href="https://www.knowlesti.ph" target="_blank" style="display: inline-block;">
-                  <img src="https://knowlesti.sg/wp-content/uploads/2018/03/Knowles-Training-Institute-Logo.png.webp" width="180" alt="Knowles Training Institute" style="border: 0; display: block;">
+                <a href="https://www.knowlesti.sg" target="_blank" style="display: inline-block;">
+                  <img src="https://i.imgur.com/U8PwGsz.jpeg" width="180" alt="Knowles Training Institute" style="border: 0; display: block;">
                 </a>
               </td>
             </tr>
