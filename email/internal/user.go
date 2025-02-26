@@ -1,6 +1,6 @@
 // Copyright © 2025 Duane Matthew P. Chan
 
-package credentials
+package email
 
 import "fmt"
 

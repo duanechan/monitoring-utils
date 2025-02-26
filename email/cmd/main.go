@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	credentials "github.com/duanechan/monitoring-utils/credentials/internal"
+	email "github.com/duanechan/monitoring-utils/email/internal"
 	"github.com/fatih/color"
 )
 
@@ -24,7 +24,7 @@ func main() {
 	flag.Parse()
 
 	// Read .env
-	config, err := credentials.LoadConfig()
+	config, err := email.LoadConfig()
 	if err != nil {
 		log.Fatalf("error: failed to load config: %s", err)
 	}
@@ -46,12 +46,12 @@ func main() {
 		}
 
 		// Parse recipient data
-		records, err := credentials.ParseData(*path)
+		records, err := email.ParseData(*path)
 		if err != nil {
 			log.Fatalf("error: failed to read recipient data: %s", err)
 		}
 
-		result := credentials.ValidateRecords(records)
+		result := email.ValidateRecords(records)
 		if result.Invalids > 0 || result.Duplicates > 0 {
 			ContinuePrompt(result)
 		}
@@ -61,14 +61,14 @@ func main() {
 		var wg sync.WaitGroup
 
 		for i, r := range result.Recipients {
-			e := credentials.Email{
-				Body:   credentials.DefaultTemplate,
-				To:     credentials.User{Name: r.Name, Email: r.Email},
+			e := email.Email{
+				Body:   email.DefaultTemplate,
+				To:     email.User{Name: r.Name, Email: r.Email},
 				Config: config,
 			}
 
 			wg.Add(1)
-			go func(r credentials.User) {
+			go func(r email.User) {
 				done := make(chan bool)
 
 				defer func() {
@@ -106,7 +106,7 @@ func main() {
 	}
 }
 
-func ContinuePrompt(result credentials.ParseResult) {
+func ContinuePrompt(result email.ParseResult) {
 	fmt.Println()
 	color.HiYellow("There is/are %d invalid email/s in the file:\n", result.Invalids)
 	fmt.Println(result.ValidationLog)

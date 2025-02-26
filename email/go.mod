@@ -1,4 +1,4 @@
-module github.com/duanechan/monitoring-utils/credentials
+module github.com/duanechan/monitoring-utils/email
 
 go 1.24.0
 

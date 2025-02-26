@@ -1,4 +1,4 @@
-package credentials
+package email
 
 import (
 	"encoding/csv"
