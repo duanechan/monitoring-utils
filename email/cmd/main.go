@@ -36,7 +36,7 @@ func main() {
 		// If path flag is empty, specify filepath on runtime
 		if *path == "" {
 			reader := bufio.NewReader(os.Stdin)
-			fmt.Printf("Filepath: ")
+			color.RGB(104, 104, 104).Printf("ctrl + C - exit\n\nInput Filepath: ")
 			input, err := reader.ReadString('\n')
 			if err != nil {
 				log.Fatalf("error: failed to read CSV file: %s", err)
@@ -55,6 +55,7 @@ func main() {
 		if result.Invalids > 0 || result.Duplicates > 0 {
 			ContinuePrompt(result)
 		}
+		fmt.Println()
 
 		// Send emails to each recipient
 		sent := 0
@@ -107,8 +108,13 @@ func main() {
 }
 
 func ContinuePrompt(result email.ParseResult) {
+	badEmails := result.Invalids + result.Duplicates
 	fmt.Println()
-	color.HiYellow("There is/are %d invalid email/s in the file:\n", result.Invalids)
+	if badEmails > 1 {
+		color.HiYellow("There are %d bad emails in the file:\n", badEmails)
+	} else {
+		color.HiYellow("There is one bad email in the file:\n")
+	}
 	fmt.Println(result.ValidationLog)
 	fmt.Printf(
 		"\nAre you sure you want to continue? Press Enter to %s or CTRL+C to %s.",
@@ -116,7 +122,6 @@ func ContinuePrompt(result email.ParseResult) {
 		color.New(color.FgHiGreen).Sprintf("cancel"),
 	)
 	fmt.Scanln()
-	fmt.Println()
 }
 
 // Prints a short report of the number of successful and failed sent emails.
@@ -145,14 +150,14 @@ func GenerateReport(sent, invalids, duplicates int) string {
 
 // Header text of the Credentials Helper program.
 func Header() {
-	color.RGB(103, 150, 191).Println(` _____              _            _   _       _       _   _      _                 
-/  __ \            | |          | | (_)     | |     | | | |    | |                
-| /  \/_ __ ___  __| | ___ _ __ | |_ _  __ _| |___  | |_| | ___| |_ __   ___ _ __ 
-| |   | '__/ _ \/ _` + "`" + ` |/ _ | '_ \| __| |/ _` + "`" + ` | / __| |  _  |/ _ | | '_ \ / _ | '__|
-| \__/| | |  __| (_| |  __| | | | |_| | (_| | \__ \ | | | |  __| | |_) |  __| |   
- \____|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|___/ \_| |_/\___|_| .__/ \___|_|   
-                                                                 | |              
-                                                                 |_|     `)
+	color.RGB(103, 150, 191).Println(`
+ ______     __    __     ______     __     __            __  __     ______     __         ______   ______     ______    
+/\  ___\   /\ "-./  \   /\  __ \   /\ \   /\ \          /\ \_\ \   /\  ___\   /\ \       /\  == \ /\  ___\   /\  == \   
+\ \  __\   \ \ \-./\ \  \ \  __ \  \ \ \  \ \ \____     \ \  __ \  \ \  __\   \ \ \____  \ \  _-/ \ \  __\   \ \  __<   
+ \ \_____\  \ \_\ \ \_\  \ \_\ \_\  \ \_\  \ \_____\     \ \_\ \_\  \ \_____\  \ \_____\  \ \_\    \ \_____\  \ \_\ \_\ 
+  \/_____/   \/_/  \/_/   \/_/\/_/   \/_/   \/_____/      \/_/\/_/   \/_____/   \/_____/   \/_/     \/_____/   \/_/ /_/ 
+                                                                                                                        
+	`)
 	fmt.Println()
 	fmt.Println()
 }

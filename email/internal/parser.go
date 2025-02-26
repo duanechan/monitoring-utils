@@ -43,12 +43,12 @@ func ValidateRecords(records [][]string) ParseResult {
 
 		if !IsValidEmail(email) {
 			result.Invalids++
-			result.ValidationLog += fmt.Sprintf("Invalid email address (%s).\n", email)
+			result.ValidationLog += fmt.Sprintf("... Invalid email address at row %d (%s).\n", i+1, email)
 			continue
 		}
 		if dupeIdx, exists := recipientMap[email]; exists {
 			result.Duplicates++
-			result.ValidationLog += fmt.Sprintf("Duplicate email. Exact match at record %d (%s).\n", dupeIdx+1, email)
+			result.ValidationLog += fmt.Sprintf("... Duplicate email at row %d. Exact match at record %d (%s).\n", i+1, dupeIdx+1, email)
 			continue
 		} else {
 			recipientMap[email] = i
