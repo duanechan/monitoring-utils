@@ -107,7 +107,7 @@ const (
             <tr>
               <td align="center" valign="middle" style="padding: 20px 20px;">
                 <a href="https://www.knowlesti.sg" target="_blank" style="display: inline-block;">
-                  <img src="https://i.imgur.com/U8PwGsz.jpeg" width="180" alt="Knowles Training Institute" style="border: 0; display: block;">
+                  <img src="https://i.imgur.com/Q9nLEZA.png" width="200" alt="Knowles Training Institute" style="border: 0; display: block;">
                 </a>
               </td>
             </tr>

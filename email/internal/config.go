@@ -10,6 +10,7 @@ import (
 )
 
 type EmailConfig struct {
+	Test     string
 	SMTPUser string
 	SMTPPass string
 	From     User

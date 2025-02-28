@@ -3,21 +3,20 @@
 package main
 
 import (
-	"bufio"
-	"flag"
-	"fmt"
 	"log"
-	"os"
-	"os/exec"
-	"runtime"
-	"strings"
-	"sync"
-	"time"
 
-	email "github.com/duanechan/monitoring-utils/email/internal"
-	"github.com/fatih/color"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/duanechan/monitoring-utils/email/internal/model"
 )
 
+func main() {
+	p := tea.NewProgram(model.InitializeModel())
+	if _, err := p.Run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+/*
 func main() {
 	// Read -path flag
 	path := flag.String("path", "", "the file path to the list of recipients")
@@ -151,12 +150,12 @@ func GenerateReport(sent, invalids, duplicates int) string {
 // Header text of the Credentials Helper program.
 func Header() {
 	color.RGB(103, 150, 191).Println(`
- ______     __    __     ______     __     __            __  __     ______     __         ______   ______     ______    
-/\  ___\   /\ "-./  \   /\  __ \   /\ \   /\ \          /\ \_\ \   /\  ___\   /\ \       /\  == \ /\  ___\   /\  == \   
-\ \  __\   \ \ \-./\ \  \ \  __ \  \ \ \  \ \ \____     \ \  __ \  \ \  __\   \ \ \____  \ \  _-/ \ \  __\   \ \  __<   
- \ \_____\  \ \_\ \ \_\  \ \_\ \_\  \ \_\  \ \_____\     \ \_\ \_\  \ \_____\  \ \_____\  \ \_\    \ \_____\  \ \_\ \_\ 
-  \/_____/   \/_/  \/_/   \/_/\/_/   \/_/   \/_____/      \/_/\/_/   \/_____/   \/_____/   \/_/     \/_____/   \/_/ /_/ 
-                                                                                                                        
+ ______     __    __     ______     __     __            __  __     ______     __         ______   ______     ______
+/\  ___\   /\ "-./  \   /\  __ \   /\ \   /\ \          /\ \_\ \   /\  ___\   /\ \       /\  == \ /\  ___\   /\  == \
+\ \  __\   \ \ \-./\ \  \ \  __ \  \ \ \  \ \ \____     \ \  __ \  \ \  __\   \ \ \____  \ \  _-/ \ \  __\   \ \  __<
+ \ \_____\  \ \_\ \ \_\  \ \_\ \_\  \ \_\  \ \_____\     \ \_\ \_\  \ \_____\  \ \_____\  \ \_\    \ \_____\  \ \_\ \_\
+  \/_____/   \/_/  \/_/   \/_/\/_/   \/_/   \/_____/      \/_/\/_/   \/_____/   \/_____/   \/_/     \/_____/   \/_/ /_/
+
 	`)
 	fmt.Println()
 	fmt.Println()
@@ -193,3 +192,4 @@ func ShowLoadingBar(done chan bool) {
 		}
 	}
 }
+*/

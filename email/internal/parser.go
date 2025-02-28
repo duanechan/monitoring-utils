@@ -33,7 +33,7 @@ func ParseData(filepath string) ([][]string, error) {
 	return records, nil
 }
 
-func ValidateRecords(records [][]string) ParseResult {
+func ValidateRecords(records [][]string) *ParseResult {
 	recipientMap := map[string]int{}
 	result := ParseResult{}
 
@@ -57,7 +57,7 @@ func ValidateRecords(records [][]string) ParseResult {
 		result.Recipients = append(result.Recipients, User{Name: name, Email: email})
 	}
 
-	return result
+	return &result
 }
 
 // func GetRecipients(filepath string) ([]User, int, int, error) {
