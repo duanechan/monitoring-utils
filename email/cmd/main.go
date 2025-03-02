@@ -35,7 +35,7 @@ func main() {
 		// If path flag is empty, specify filepath on runtime
 		if *path == "" {
 			reader := bufio.NewReader(os.Stdin)
-			color.RGB(104, 104, 104).Printf("ctrl + C - exit\n\nInput Filepath: ")
+			color.RGB(104, 104, 104).Printf("Ctrl + C - exit\n\nInput Filepath: ")
 			input, err := reader.ReadString('\n')
 			if err != nil {
 				log.Fatalf("error: failed to read CSV file: %s", err)
