@@ -1,8 +1,9 @@
 *.csv
 *.xlsx
 *.exe
+*.toml
 *_test.go
 .env
 
-*/data
+*/testdata
 */tests
