@@ -10,15 +10,18 @@ import (
 )
 
 type (
-	// ParserModel
 	ParserModel struct {
 		enabled   bool
-		result    *email.ParseResult
+		err       error
+		result    email.ParseResult
 		textInput textinput.Model
 	}
 
-	// ParserError
-	parserError struct{ err error }
+	parserMessage struct {
+		err    error
+		result email.ParseResult
+	}
+	readInputMessage struct{}
 )
 
 func initParser() ParserModel {
@@ -28,13 +31,12 @@ func initParser() ParserModel {
 		AlignHorizontal(lipgloss.Center).
 		Bold(true)
 	ti.Placeholder = "C:/path/to/file"
-	ti.Width = 150
+	ti.Width = 100
 	ti.CharLimit = 150
 	ti.Focus()
 
 	return ParserModel{
 		enabled:   true,
-		result:    nil,
 		textInput: ti,
 	}
 }
@@ -49,15 +51,13 @@ func (p ParserModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "esc":
-			return p, tea.Quit
 		case "enter":
-			if err := p.readInput(); err != nil {
-				return p, func() tea.Msg {
-					return parserError{err}
-				}
-			}
+			return p, p.readInput
 		}
+
+	case readInputMessage:
+		p.result, p.err = p.parse()
+		return p, p.parserSuccess
 	}
 
 	if p.enabled {
@@ -67,20 +67,33 @@ func (p ParserModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (p ParserModel) View() string {
-	return p.textInput.View()
+	return lipgloss.NewStyle().
+		Padding(1, 2).
+		Render(p.textInput.View())
 }
 
-func (p *ParserModel) readInput() error {
+func (p ParserModel) readInput() tea.Msg {
+	return readInputMessage{}
+}
+
+func (p ParserModel) parserSuccess() tea.Msg {
+	return parserMessage{
+		err:    p.err,
+		result: p.result,
+	}
+}
+
+func (p *ParserModel) parse() (email.ParseResult, error) {
 	input := strings.ReplaceAll(p.textInput.Value(), "\"", "")
 	records, err := email.ParseData(input)
 	if err != nil {
-		return err
+		return email.ParseResult{}, err
 	}
 
-	p.result = email.ValidateRecords(records)
+	result := email.ValidateRecords(records)
 
 	p.textInput.Reset()
 	p.textInput.Blur()
 
-	return nil
+	return result, nil
 }

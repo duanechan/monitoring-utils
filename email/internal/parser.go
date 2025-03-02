@@ -11,7 +11,16 @@ type ParseResult struct {
 	Invalids      int
 	Duplicates    int
 	ValidationLog string
+	Raw           [][]string
 	Recipients    []User
+}
+
+func (p ParseResult) IsEmpty() bool {
+	return len(p.Recipients) == 0 &&
+		len(p.Raw) == 0 &&
+		p.Invalids == 0 &&
+		p.Duplicates == 0 &&
+		p.ValidationLog == ""
 }
 
 // Parses raw (CSV file) data and returns a slice of recipients.
@@ -33,9 +42,9 @@ func ParseData(filepath string) ([][]string, error) {
 	return records, nil
 }
 
-func ValidateRecords(records [][]string) *ParseResult {
+func ValidateRecords(records [][]string) ParseResult {
 	recipientMap := map[string]int{}
-	result := ParseResult{}
+	result := ParseResult{Raw: records}
 
 	for i, r := range records {
 		name := strings.TrimSpace(strings.ReplaceAll(r[0], "\r", ""))
@@ -57,7 +66,7 @@ func ValidateRecords(records [][]string) *ParseResult {
 		result.Recipients = append(result.Recipients, User{Name: name, Email: email})
 	}
 
-	return &result
+	return result
 }
 
 // func GetRecipients(filepath string) ([]User, int, int, error) {
