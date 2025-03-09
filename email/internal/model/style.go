@@ -16,9 +16,6 @@ var (
 		Foreground(Primary).
 		Padding(3, 3)
 
-	Help = lipgloss.NewStyle().
-		Foreground(Gray)
-
 	Error = lipgloss.NewStyle().
 		Background(Red).
 		Padding(1, 1)

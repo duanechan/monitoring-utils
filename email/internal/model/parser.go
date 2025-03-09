@@ -21,24 +21,20 @@ type (
 		err    error
 		result email.ParseResult
 	}
-	readInputMessage struct{}
 )
 
-func initParser() ParserModel {
+func initParser() textinput.Model {
 	ti := textinput.New()
-	ti.Prompt = "Input the filepath: "
+	ti.Prompt = lipgloss.NewStyle().Foreground(Primary).Render("Input the filepath: ")
 	ti.PromptStyle = lipgloss.NewStyle().
 		AlignHorizontal(lipgloss.Center).
 		Bold(true)
 	ti.Placeholder = "C:/path/to/file"
-	ti.Width = 100
+	ti.Width = 90
 	ti.CharLimit = 150
 	ti.Focus()
 
-	return ParserModel{
-		enabled:   true,
-		textInput: ti,
-	}
+	return ti
 }
 
 func (p ParserModel) Init() tea.Cmd {

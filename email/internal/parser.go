@@ -8,11 +8,11 @@ import (
 )
 
 type ParseResult struct {
-	Invalids      int
-	Duplicates    int
-	ValidationLog string
-	Raw           [][]string
-	Recipients    []User
+	Invalids   int
+	Duplicates int
+	Raw        [][]string
+	Recipients []User
+	BadEmails  map[int]string
 }
 
 func (p ParseResult) IsEmpty() bool {
@@ -20,7 +20,7 @@ func (p ParseResult) IsEmpty() bool {
 		len(p.Raw) == 0 &&
 		p.Invalids == 0 &&
 		p.Duplicates == 0 &&
-		p.ValidationLog == ""
+		len(p.BadEmails) == 0
 }
 
 // Parses raw (CSV file) data and returns a slice of recipients.
@@ -44,7 +44,7 @@ func ParseData(filepath string) ([][]string, error) {
 
 func ValidateRecords(records [][]string) ParseResult {
 	recipientMap := map[string]int{}
-	result := ParseResult{Raw: records}
+	result := ParseResult{Raw: records, BadEmails: make(map[int]string)}
 
 	for i, r := range records {
 		name := strings.TrimSpace(strings.ReplaceAll(r[0], "\r", ""))
@@ -52,12 +52,12 @@ func ValidateRecords(records [][]string) ParseResult {
 
 		if !IsValidEmail(email) {
 			result.Invalids++
-			result.ValidationLog += fmt.Sprintf("... Invalid email address at row %d (%s).\n", i+1, email)
+			result.BadEmails[i+1] = fmt.Sprintf("Invalid email address at row %d (%s).", i+1, email)
 			continue
 		}
 		if dupeIdx, exists := recipientMap[email]; exists {
 			result.Duplicates++
-			result.ValidationLog += fmt.Sprintf("... Duplicate email at row %d. Exact match at record %d (%s).\n", i+1, dupeIdx+1, email)
+			result.BadEmails[i+1] = fmt.Sprintf("Duplicate email at row %d. Exact match at record %d (%s).", i+1, dupeIdx+1, email)
 			continue
 		} else {
 			recipientMap[email] = i
