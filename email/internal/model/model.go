@@ -27,7 +27,6 @@ type (
 		table        table.Model
 		progressBar  progress.Model
 		progressChan chan float64
-		messageChan  chan string
 	}
 
 	mode struct {
@@ -52,7 +51,6 @@ func InitializeModel() EmailModel {
 
 	return EmailModel{
 		input:        initParser(),
-		progressBar:  progress.New(progress.WithDefaultGradient()),
 		progressChan: make(chan float64),
 		mode: mode{
 			Quit:   false,
@@ -80,6 +78,17 @@ func (e EmailModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			e.mode.Help = !e.mode.Help
 			return e, nil
 		case "esc":
+			if e.mode.Send && e.progressBar.Percent() == 1.0 {
+				e.progressBar.SetPercent(0.0)
+				e.sendResults = nil
+				e.mode.Parser = true
+				e.mode.Editor = false
+				e.mode.Send = false
+				e.mode.Help = false
+				return e, textinput.Blink
+			} else if e.progressBar.Percent() < 1.0 {
+				return e, nil
+			}
 			e.mode.Quit = !e.mode.Quit
 		case "ctrl+c":
 			return e, tea.Quit
@@ -139,7 +148,6 @@ func (e EmailModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return e, e.SendEmails()
 
 	case progressMsg:
-		// Update the progress bar with the received value
 		cmds = append(cmds, e.progressBar.SetPercent(float64(msg)))
 	}
 
@@ -169,8 +177,13 @@ func (e EmailModel) View() string {
 	} else if e.mode.Editor {
 		sections = append(sections, e.table.View())
 		if e.mode.Send {
-			sections = append(sections, "\nSending emails...\n")
-			sections = append(sections, e.progressBar.View())
+			if !e.progressBar.IsAnimating() && e.progressBar.Percent() == 1.0 {
+				sections = append(sections, lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("46")).Render("\nDone!\n"))
+				sections = append(sections, "Press ESC to go back")
+			} else {
+				sections = append(sections, "\nSending emails...\n")
+				sections = append(sections, e.progressBar.View())
+			}
 		} else {
 			sections = append(sections, e.resultView())
 		}
@@ -189,14 +202,19 @@ func (e EmailModel) View() string {
 
 func (e EmailModel) handleInput() tea.Msg { return readInputMessage{} }
 
-func (e EmailModel) send() tea.Msg { return sendEmails{} }
+func (e EmailModel) send() tea.Msg {
+	e.progressBar.SetPercent(0.0)
+	return sendEmails{}
+}
 
 func (e EmailModel) initializeEditor() tea.Msg { return initializeEditor{} }
 
 func (e *EmailModel) SendEmails() tea.Cmd {
+	e.progressBar = progress.New(progress.WithDefaultGradient())
 	e.sendResults = []string{}
 	total := float64(len(e.parseResult.Recipients))
 	progress := 0.0
+	e.input.Focus()
 
 	return func() tea.Msg {
 		var wg sync.WaitGroup
@@ -240,7 +258,6 @@ func (e *EmailModel) SendEmails() tea.Cmd {
 		wg.Wait()
 		close(progressChan)
 		close(resultChan)
-
 		return progressMsg(1)
 	}
 }
