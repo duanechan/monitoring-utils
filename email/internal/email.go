@@ -27,11 +27,19 @@ func (e Email) Send() error {
 		return fmt.Errorf("invalid recipient email")
 	}
 
-	const subject string = "OfficeTimer Credentials for the Internship in Knowles Training Institute"
-	const importance mail.Importance = mail.ImportanceUrgent
-
 	// Create new email message
 	message := mail.NewMsg()
+
+	// Subject
+	switch e.Body {
+	case Credentials:
+		message.Subject("OfficeTimer Credentials for the Internship in Knowles Training Institute")
+	case Late:
+		message.Subject("Important Reminder for Late Interns")
+	}
+
+	// Importance
+	message.SetImportance(mail.ImportanceUrgent)
 
 	// CC
 	if e.Config.CC.Exists() {
@@ -50,23 +58,33 @@ func (e Email) Send() error {
 		return err
 	}
 
-	message.Subject(subject)
-	message.SetImportance(importance)
-
 	// Email body
-	message.SetBodyString(
-		mail.TypeTextHTML,
-		fmt.Sprintf(
-			string(e.Body),
-			e.To.Name,
-			e.To.Email,
-			e.To.Email,
-			"welcome1#",
-			e.Config.From.Name,
-			e.Config.From.Email,
-			e.Config.From.Email,
-		),
-	)
+	switch e.Body {
+	case Credentials:
+		message.SetBodyString(
+			mail.TypeTextHTML,
+			fmt.Sprintf(
+				string(e.Body),
+				e.To.Name,
+				e.To.Email,
+				e.To.Email,
+				"welcome1#",
+				e.Config.From.Name,
+				e.Config.From.Email,
+				e.Config.From.Email,
+			),
+		)
+	case Late:
+		message.SetBodyString(
+			mail.TypeTextHTML,
+			fmt.Sprintf(
+				string(e.Body),
+				e.Config.From.Name,
+				e.Config.From.Email,
+				e.Config.From.Email,
+			),
+		)
+	}
 
 	// SMTP server configuration
 	client, err := mail.NewClient("smtp.gmail.com",
@@ -91,7 +109,7 @@ type Template string
 
 const (
 	// The default email template/layout.
-	DefaultTemplate Template = `
+	Credentials Template = `
   <!DOCTYPE html>
   <html>
   <head>
@@ -168,7 +186,96 @@ const (
                   <em style="color: #2d3748;">%s</em><br>
                   <span style="color: #4a5568;">Knowles IT Monitoring Team</span><br>
                   Email: <a href="mailto:%s" style="color: #2b6cb0; text-decoration: none;">%s</a><br>
-                  Visit us: <a href="https://www.knowlesti.ph" style="color: #2b6cb0; text-decoration: none;">knowlesti.ph</a>
+                  Visit us: <a href="https://www.philippines.knowlesti.com" style="color: #2b6cb0; text-decoration: none;">philippines.knowlesti.com</a>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+  </html>
+  `
+
+	Late Template = `
+    <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <title>Important Reminder for Late Interns</title>
+  </head>
+  <body style="margin: 0; padding: 15px; background-color: #e9f1f7; font-family: Arial, sans-serif;">
+    <table role="presentation" width="100%%" height="100%%" cellspacing="0" cellpadding="0" border="0">
+      <tr>
+        <td align="center" valign="middle">
+          <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="background-color: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 10px 15px rgba(0, 0, 0, 0.05);">
+            <!-- Logo Section -->
+            <tr>
+              <td align="center" valign="middle" style="padding: 20px 20px;">
+                <a href="https://www.knowlesti.sg" target="_blank" style="display: inline-block;">
+                  <img src="https://i.imgur.com/Q9nLEZA.png" width="200" alt="Knowles Training Institute" style="border: 0; display: block;">
+                </a>
+              </td>
+            </tr>
+
+            <!-- Divider -->
+            <tr>
+              <td align="center" style="padding: 0px 40px;">
+                <div style="height: 1px; background-color: #edf2f7;"></div>
+              </td>
+            </tr>
+
+            <!-- Title Section -->
+            <tr>
+              <td align="center" style="padding: 20px 40px 0;">
+                <h1 style="color: #1a365d; font-size: 24px; margin: 0; font-family: Arial, sans-serif;">Important Reminder for Late Interns</h1>
+                <p style="color: #4a5568; font-size: 16px; padding: 10px; margin: 0; font-family: Arial, sans-serif; text-align: justify;">
+                <br><br>
+                Dear Intern,<br><br>
+                We hope this message finds you well. As you know, punctuality is an essential aspect of professionalism and contributes significantly to the success of any workplace. We understand that unforeseen circumstances may sometimes cause delays, but it is crucial to prioritize timeliness in your internship experience. 
+                <br><br>
+                We kindly remind all interns who have been late to take this matter seriously and make the necessary adjustments to ensure your punctuality moving forward. Remember, being on time not only demonstrates your commitment and respect for your work but also allows you to maximize your learning opportunities and contribute effectively to the team. 
+                <br><br>
+                To help you improve your punctuality, we suggest the following:
+                </p>
+                <ul style="color: #4a5568; font-size: 16px; padding: 10px; margin: 0; font-family: Arial, sans-serif; text-align: justify;">
+                <li><strong>Plan ahead:</strong> Set your alarm clock early enough to provide ample time for your morning routine and commute. Consider any potential traffic or public transportation delays.</li>
+                <br><br>
+                <li><strong>Prepare in advance:</strong> Organize your essentials, such as your work bag and necessary documents, the night before to avoid last-minute rushes or forgotten items.</li>
+                <br><br>
+                <li><strong>Communicate proactively:</strong> If you encounter an unexpected situation that may cause tardiness, immediately notify your supervisor or the appropriate person. Prompt communication demonstrates responsibility and enables your team to plan accordingly.</li>
+                <br><br>
+                <li><strong>Seek support:</strong> If you struggle with punctuality, don't hesitate to seek guidance from your mentor, supervisor, or colleagues. They can provide valuable advice or resources to help you manage your time effectively.</li>
+                </ul>
+                <p style="color: #4a5568; font-size: 16px; padding: 10px; margin: 0; font-family: Arial, sans-serif; text-align: justify;">
+                Please remember that your time with us is a valuable learning experience, and developing strong professional habits, such as punctuality, will greatly benefit your future career endeavors. 
+                <br><br>
+                We believe in your potential and are confident that you can make the necessary adjustments to improve your timeliness. If you have any questions or need further assistance, don't hesitate to reach out to your supervisor or the intern coordinator. 
+                <br><br>
+                Thank you for your attention, and we look forward to your continued growth and success during your internship. 
+                <br><br>
+                Best regards,<br>
+                Monitoring Team<br>
+                </p>
+              </td>
+            </tr>
+
+            <!-- Divider -->
+            <tr>
+              <td align="center" style="padding: 0 40px;">
+                <div style="height: 1px; background-color: #edf2f7;"></div>
+              </td>
+            </tr>
+
+            <!-- Footer Section -->
+            <tr>
+              <td align="center" style="padding: 30px 40px;">
+                <p style="margin: 0; color: #4a5568; font-size: 14px; line-height: 1.6;">
+                  <em style="color: #2d3748;">%s</em><br>
+                  <span style="color: #4a5568;">Knowles IT Monitoring Team</span><br>
+                  Email: <a href="mailto:%s" style="color: #2b6cb0; text-decoration: none;">%s</a><br>
+                  Visit us: <a href="https://www.philippines.knowlesti.com" style="color: #2b6cb0; text-decoration: none;">philippines.knowlesti.com</a>
                 </p>
               </td>
             </tr>

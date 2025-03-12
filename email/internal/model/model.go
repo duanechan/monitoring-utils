@@ -15,18 +15,25 @@ import (
 
 type (
 	EmailModel struct {
-		width        int
-		height       int
-		cursor       int
-		sendResults  []string
-		err          error
-		mode         mode
-		parseResult  email.ParseResult
-		config       email.EmailConfig
-		input        textinput.Model
-		table        table.Model
-		progressBar  progress.Model
-		progressChan chan float64
+		width            int
+		height           int
+		cursor           int
+		selectedTemplate int
+		sendResults      []string
+		templates        []templates
+		err              error
+		mode             mode
+		parseResult      email.ParseResult
+		config           email.EmailConfig
+		input            textinput.Model
+		table            table.Model
+		progressBar      progress.Model
+		progressChan     chan float64
+	}
+
+	templates struct {
+		name     string
+		template email.Template
 	}
 
 	mode struct {
@@ -52,6 +59,11 @@ func InitializeModel() EmailModel {
 	return EmailModel{
 		input:        initParser(),
 		progressChan: make(chan float64),
+		templates: []templates{
+			{name: "CRED", template: email.Credentials},
+			{name: "LATE", template: email.Late},
+			{name: "ABST", template: email.Credentials},
+		},
 		mode: mode{
 			Quit:   false,
 			Help:   false,
@@ -110,7 +122,14 @@ func (e EmailModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				e.input.Focus()
 				return e, textinput.Blink
 			}
-
+		case "shift+tab":
+			if (!e.mode.Quit || !e.mode.Editor || !e.mode.Send) && e.selectedTemplate > 0 {
+				e.selectedTemplate--
+			}
+		case "tab":
+			if (!e.mode.Quit || !e.mode.Editor || !e.mode.Send) && e.selectedTemplate < len(e.templates)-1 {
+				e.selectedTemplate++
+			}
 		case "left":
 			if (e.mode.Quit || e.mode.Editor) && e.cursor > 0 {
 				e.cursor--
@@ -173,7 +192,8 @@ func (e EmailModel) View() string {
 	sections = append(sections, e.headerView())
 
 	if e.mode.Parser {
-		sections = append(sections, e.input.View())
+		sections = append(sections, lipgloss.NewStyle().Padding(1, 1).Background(lipgloss.Color("42")).Render("Email Template: "+e.templates[e.selectedTemplate].name))
+		sections = append(sections, lipgloss.NewStyle().Padding(1, 0).Render(e.input.View()))
 	} else if e.mode.Editor {
 		sections = append(sections, e.table.View())
 		if e.mode.Send {
@@ -239,7 +259,7 @@ func (e *EmailModel) SendEmails() tea.Cmd {
 				defer wg.Done()
 
 				em := email.Email{
-					Body:   email.DefaultTemplate,
+					Body:   e.templates[e.selectedTemplate].template,
 					To:     email.User{Name: r.Name, Email: r.Email},
 					Config: e.config,
 				}
@@ -324,11 +344,19 @@ func (e EmailModel) helpView() string {
 			Render("? / toggle help")
 	}
 
-	commands := lipgloss.JoinHorizontal(
-		lipgloss.Center,
-		lipgloss.NewStyle().Padding(1, 2).Render("? / toggle help"),
-		lipgloss.NewStyle().Padding(1, 2).Render("esc / quit"),
-		lipgloss.NewStyle().Padding(1, 2).Render("ctrl+c / force quit"),
+	commands := lipgloss.JoinVertical(
+		lipgloss.Left,
+		lipgloss.JoinHorizontal(
+			lipgloss.Center,
+			lipgloss.NewStyle().Padding(1, 2).Render("? / toggle help"),
+			lipgloss.NewStyle().Padding(1, 2).Render("esc / quit"),
+			lipgloss.NewStyle().Padding(1, 2).Render("ctrl+c / force quit"),
+		),
+		lipgloss.JoinHorizontal(
+			lipgloss.Center,
+			lipgloss.NewStyle().Padding(1, 2).Render("tab / next template"),
+			lipgloss.NewStyle().Padding(1, 2).Render("shift+tab / previous template"),
+		),
 	)
 
 	return lipgloss.NewStyle().
@@ -370,4 +398,55 @@ func (e EmailModel) quitView() string {
 		lipgloss.Center, lipgloss.Center,
 		prompt,
 	)
+}
+
+func initParser() textinput.Model {
+	ti := textinput.New()
+	ti.Prompt = lipgloss.NewStyle().Foreground(Primary).Render("Input the filepath: ")
+	ti.PromptStyle = lipgloss.NewStyle().
+		AlignHorizontal(lipgloss.Center).
+		Bold(true)
+	ti.Placeholder = "C:/path/to/file"
+	ti.Width = 90
+	ti.CharLimit = 150
+	ti.Focus()
+
+	return ti
+}
+
+func initEditor(result email.ParseResult) table.Model {
+	rows := []table.Row{}
+
+	redStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
+	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("46"))
+
+	for i, r := range result.Raw {
+		var status string
+		if e, exists := result.BadEmails[i+1]; exists {
+			status = redStyle.Render(fmt.Sprintf("✖ %s", e))
+		} else {
+			status = greenStyle.Render("✔")
+		}
+
+		rows = append(rows, table.Row{fmt.Sprintf("%d", i+1), r[0], r[1], status})
+	}
+
+	cols := []table.Column{
+		{Title: "Row", Width: 5},
+		{Title: "Name", Width: 25},
+		{Title: "Email", Width: 25},
+		{Title: "Valid", Width: 100}, // Apply color to header
+	}
+
+	t := table.New(
+		table.WithHeight(len(result.Raw)+1),
+		table.WithColumns(cols),
+		table.WithRows(rows),
+		table.WithStyles(table.Styles{
+			Header:   lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("210")), // Default headers
+			Selected: lipgloss.NewStyle().Background(lipgloss.Color("236")).Foreground(lipgloss.Color("15")),
+		}),
+	)
+
+	return t
 }
