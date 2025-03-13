@@ -3,7 +3,6 @@ package model
 import (
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/table"
@@ -47,7 +46,10 @@ type (
 	sendEmails       struct{}
 	readInputMessage struct{}
 	initializeEditor struct{}
-	progressMsg      float64
+	progressMsg      struct {
+		progress float64
+		results  []string
+	}
 )
 
 func InitializeModel() EmailModel {
@@ -115,7 +117,7 @@ func (e EmailModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case e.mode.Parser:
 				return e, e.handleInput
 			case e.mode.Editor && e.cursor == 1:
-				return e, e.send
+				return e, e.startSending
 			case e.mode.Editor && e.cursor == 0:
 				e.mode.Editor = false
 				e.mode.Parser = true
@@ -167,7 +169,8 @@ func (e EmailModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return e, e.SendEmails()
 
 	case progressMsg:
-		cmds = append(cmds, e.progressBar.SetPercent(float64(msg)))
+		e.sendResults = msg.results
+		cmds = append(cmds, e.progressBar.SetPercent(float64(msg.progress)))
 	}
 
 	e.input, cmd = e.input.Update(msg)
@@ -192,13 +195,27 @@ func (e EmailModel) View() string {
 	sections = append(sections, e.headerView())
 
 	if e.mode.Parser {
-		sections = append(sections, lipgloss.NewStyle().Padding(1, 1).Background(lipgloss.Color("42")).Render("Email Template: "+e.templates[e.selectedTemplate].name))
-		sections = append(sections, lipgloss.NewStyle().Padding(1, 0).Render(e.input.View()))
+		sections = append(
+			sections, lipgloss.NewStyle().
+				Padding(1, 1).
+				Background(lipgloss.Color("42")).
+				Render("Email Template: "+e.templates[e.selectedTemplate].name))
+		sections = append(
+			sections, lipgloss.NewStyle().
+				Padding(1, 0).
+				Render(e.input.View()))
 	} else if e.mode.Editor {
 		sections = append(sections, e.table.View())
 		if e.mode.Send {
 			if !e.progressBar.IsAnimating() && e.progressBar.Percent() == 1.0 {
-				sections = append(sections, lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("46")).Render("\nDone!\n"))
+				sections = append(
+					sections, lipgloss.NewStyle().
+						Bold(true).
+						Foreground(lipgloss.Color("46")).
+						Render("\nDone!\n"))
+				if len(e.sendResults) > 0 {
+					sections = append(sections, e.sendResults...)
+				}
 				sections = append(sections, "Press ESC to go back")
 			} else {
 				sections = append(sections, "\nSending emails...\n")
@@ -220,24 +237,20 @@ func (e EmailModel) View() string {
 	return lipgloss.JoinVertical(lipgloss.Left, sections...)
 }
 
-func (e EmailModel) handleInput() tea.Msg { return readInputMessage{} }
+func (e EmailModel) startSending() tea.Msg { return sendEmails{} }
 
-func (e EmailModel) send() tea.Msg {
-	e.progressBar.SetPercent(0.0)
-	return sendEmails{}
-}
+func (e EmailModel) handleInput() tea.Msg { return readInputMessage{} }
 
 func (e EmailModel) initializeEditor() tea.Msg { return initializeEditor{} }
 
 func (e *EmailModel) SendEmails() tea.Cmd {
-	e.progressBar = progress.New(progress.WithDefaultGradient())
-	e.sendResults = []string{}
+	e.progressBar = progress.New(progress.WithGradient("#005DAD", "#6796BF"))
 	total := float64(len(e.parseResult.Recipients))
 	progress := 0.0
 	e.input.Focus()
 
 	return func() tea.Msg {
-		var wg sync.WaitGroup
+		results := []string{}
 		progressChan := make(chan float64)
 		resultChan := make(chan string)
 
@@ -247,38 +260,37 @@ func (e *EmailModel) SendEmails() tea.Cmd {
 			}
 		}()
 
-		go func() {
-			for res := range resultChan {
-				e.sendResults = append(e.sendResults, res)
-			}
-		}()
-
 		for _, r := range e.parseResult.Recipients {
-			wg.Add(1)
-			go func(r email.User) {
-				defer wg.Done()
 
-				em := email.Email{
-					Body:   e.templates[e.selectedTemplate].template,
-					To:     email.User{Name: r.Name, Email: r.Email},
-					Config: e.config,
-				}
+			em := email.Email{
+				Body:   e.templates[e.selectedTemplate].template,
+				To:     email.User{Name: r.Name, Email: r.Email},
+				Config: e.config,
+			}
 
-				if err := em.Send(); err != nil {
-					resultChan <- fmt.Sprintf("✖ Failed: %s", r.Email)
-				} else {
-					resultChan <- fmt.Sprintf("✔ Sent: %s", r.Email)
-				}
+			if err := em.Send(); err != nil {
+				results = append(
+					results,
+					lipgloss.NewStyle().
+						Foreground(lipgloss.Color(Red)).
+						Render(fmt.Sprintf("✖ Failed: %s\n", r.Email)))
+			} else {
+				results = append(
+					results, lipgloss.NewStyle().
+						Foreground(lipgloss.Color("46")).
+						Render(fmt.Sprintf("✔ Sent: %s\n", r.Email)))
+			}
 
-				progress++
-				progressChan <- progress / total
-			}(r)
+			progress++
+			progressChan <- progress / total
 		}
 
-		wg.Wait()
 		close(progressChan)
 		close(resultChan)
-		return progressMsg(1)
+		return progressMsg{
+			progress: 1.0,
+			results:  results,
+		}
 	}
 }
 
@@ -423,7 +435,11 @@ func initEditor(result email.ParseResult) table.Model {
 	for i, r := range result.Raw {
 		var status string
 		if e, exists := result.BadEmails[i+1]; exists {
-			status = redStyle.Render(fmt.Sprintf("✖ %s", e))
+			if strings.Contains(e, "Duplicate") {
+				status = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFF00")).Render(fmt.Sprintf("━ %s", e))
+			} else {
+				status = redStyle.Render(fmt.Sprintf("✖ %s", e))
+			}
 		} else {
 			status = greenStyle.Render("✔")
 		}
@@ -435,7 +451,7 @@ func initEditor(result email.ParseResult) table.Model {
 		{Title: "Row", Width: 5},
 		{Title: "Name", Width: 25},
 		{Title: "Email", Width: 25},
-		{Title: "Valid", Width: 100}, // Apply color to header
+		{Title: "Valid", Width: 100},
 	}
 
 	t := table.New(
@@ -443,7 +459,7 @@ func initEditor(result email.ParseResult) table.Model {
 		table.WithColumns(cols),
 		table.WithRows(rows),
 		table.WithStyles(table.Styles{
-			Header:   lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("210")), // Default headers
+			Header:   lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("210")),
 			Selected: lipgloss.NewStyle().Background(lipgloss.Color("236")).Foreground(lipgloss.Color("15")),
 		}),
 	)
