@@ -35,7 +35,7 @@ type (
 
 	templates struct {
 		name     string
-		template email.Template
+		template email.TemplateType
 	}
 
 	mode struct {
@@ -80,9 +80,8 @@ func InitializeModel() EmailModel {
 			lipgloss.NewStyle().Bold(true).Foreground(Primary).Render("\nSigning out... Keep being awesome!\n\n"),
 		},
 		templates: []templates{
-			{name: "CRED", template: email.Credentials},
-			{name: "LATE", template: email.Late},
-			{name: "ABST", template: email.Credentials},
+			{name: "CRED", template: email.CredentialsTemplate},
+			{name: "LATE", template: email.LateTemplate},
 		},
 		mode: mode{
 			Quit:   false,
@@ -287,7 +286,14 @@ func (e *EmailModel) SendEmails() tea.Cmd {
 		for _, r := range e.parseResult.Recipients {
 
 			em := email.Email{
-				Body:   e.templates[e.selectedTemplate].template,
+				TemplateType: e.templates[e.selectedTemplate].template,
+				TemplateData: map[string]interface{}{
+					"Name":        r.Name,
+					"Username":    r.Email,
+					"Password":    "welcome1#",
+					"SenderName":  e.config.From.Name,
+					"SenderEmail": e.config.From.Email,
+				},
 				To:     email.User{Name: r.Name, Email: r.Email},
 				Config: e.config,
 			}
