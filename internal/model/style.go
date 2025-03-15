@@ -1,3 +1,5 @@
+// Copyright © 2025 Duane Matthew P. Chan
+
 package model
 
 import "github.com/charmbracelet/lipgloss"

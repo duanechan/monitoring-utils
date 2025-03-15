@@ -108,7 +108,7 @@ func (e Email) Send() error {
 type Template string
 
 const (
-	// The default email template/layout.
+	// Credentials template
 	Credentials Template = `
   <!DOCTYPE html>
   <html>
@@ -198,6 +198,7 @@ const (
   </html>
   `
 
+	// Late template
 	Late Template = `
     <!DOCTYPE html>
   <html>
