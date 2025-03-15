@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"math/rand"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/progress"
@@ -14,10 +15,10 @@ import (
 
 type (
 	EmailModel struct {
-		width            int
-		height           int
 		cursor           int
 		selectedTemplate int
+		goodbyeMsg       string
+		goodbyes         []string
 		sendResults      []string
 		templates        []templates
 		err              error
@@ -61,6 +62,21 @@ func InitializeModel() EmailModel {
 	return EmailModel{
 		input:        initParser(),
 		progressChan: make(chan float64),
+		goodbyes: []string{
+			lipgloss.NewStyle().Bold(true).Foreground(Primary).Render("\nGoodbye! See you next time. 👋\n\n"),
+			lipgloss.NewStyle().Bold(true).Foreground(Primary).Render("\nExiting... Have a great day!\n\n"),
+			lipgloss.NewStyle().Bold(true).Foreground(Primary).Render("\nFarewell, traveler. Until we meet again!\n\n"),
+			lipgloss.NewStyle().Bold(true).Foreground(Primary).Render("\nSession ended. Stay awesome!\n\n"),
+			lipgloss.NewStyle().Bold(true).Foreground(Primary).Render("\nPeace out! ✌️\n\n"),
+			lipgloss.NewStyle().Bold(true).Foreground(Primary).Render("\nGoodbye! Remember to take breaks. 😌\n\n"),
+			lipgloss.NewStyle().Bold(true).Foreground(Primary).Render("\nMission complete. Shutting down... 🚀\n\n"),
+			lipgloss.NewStyle().Bold(true).Foreground(Primary).Render("\nSee ya! Don't be a stranger!\n\n"),
+			lipgloss.NewStyle().Bold(true).Foreground(Primary).Render("\nLogging off... Stay safe!\n\n"),
+			lipgloss.NewStyle().Bold(true).Foreground(Primary).Render("\nThanks for stopping by! 👋\n\n"),
+			lipgloss.NewStyle().Bold(true).Foreground(Primary).Render("\nBye-bye! Hope to see you soon!\n\n"),
+			lipgloss.NewStyle().Bold(true).Foreground(Primary).Render("\nProgram terminated. Catch you later!\n\n"),
+			lipgloss.NewStyle().Bold(true).Foreground(Primary).Render("\nSigning out... Keep being awesome!\n\n"),
+		},
 		templates: []templates{
 			{name: "CRED", template: email.Credentials},
 			{name: "LATE", template: email.Late},
@@ -78,7 +94,7 @@ func InitializeModel() EmailModel {
 }
 
 func (e EmailModel) Init() tea.Cmd {
-	return tea.Batch(tea.ClearScreen, tea.EnterAltScreen, textinput.Blink)
+	return textinput.Blink
 }
 
 func (e EmailModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -100,16 +116,20 @@ func (e EmailModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				e.mode.Send = false
 				e.mode.Help = false
 				return e, textinput.Blink
-			} else if e.progressBar.Percent() < 1.0 {
+			}
+			if e.mode.Send && e.progressBar.Percent() < 1.0 {
 				return e, nil
 			}
 			e.mode.Quit = !e.mode.Quit
 		case "ctrl+c":
+			e.mode.Quit = true
+			e.goodbyeMsg = e.goodbyes[rand.Intn(len(e.goodbyes))]
 			return e, tea.Quit
 		case "enter":
 			e.err = nil
 			switch {
 			case e.mode.Quit && e.cursor == 1:
+				e.goodbyeMsg = e.goodbyes[rand.Intn(len(e.goodbyes))]
 				return e, tea.Quit
 			case e.mode.Quit && e.cursor == 0:
 				e.mode.Quit = false
@@ -127,10 +147,14 @@ func (e EmailModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "shift+tab":
 			if (!e.mode.Quit || !e.mode.Editor || !e.mode.Send) && e.selectedTemplate > 0 {
 				e.selectedTemplate--
+			} else if e.selectedTemplate == 0 {
+				e.selectedTemplate = len(e.templates) - 1
 			}
 		case "tab":
 			if (!e.mode.Quit || !e.mode.Editor || !e.mode.Send) && e.selectedTemplate < len(e.templates)-1 {
 				e.selectedTemplate++
+			} else if e.selectedTemplate == len(e.templates)-1 {
+				e.selectedTemplate = 0
 			}
 		case "left":
 			if (e.mode.Quit || e.mode.Editor) && e.cursor > 0 {
@@ -141,10 +165,6 @@ func (e EmailModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				e.cursor++
 			}
 		}
-
-	case tea.WindowSizeMsg:
-		e.width = msg.Width
-		e.height = msg.Height
 
 	case readInputMessage:
 		input := strings.ReplaceAll(e.input.Value(), "\"", "")
@@ -187,7 +207,9 @@ func (e EmailModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (e EmailModel) View() string {
-	if e.mode.Quit {
+	if e.mode.Quit && e.goodbyeMsg != "" {
+		return e.goodbyeMsg
+	} else if e.mode.Quit {
 		return e.quitView()
 	}
 
@@ -394,22 +416,17 @@ func (e EmailModel) quitView() string {
 	}
 
 	prompt := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
 		Padding(6, 12).
 		Render(
 			lipgloss.JoinVertical(
 				lipgloss.Center,
 				"Are you sure you want to exit?\n",
 				lipgloss.NewStyle().Foreground(Gray).Render("ctrl+c to force exit\n\n"),
-				lipgloss.JoinHorizontal(lipgloss.Center, cancel, confirm),
+				lipgloss.JoinHorizontal(lipgloss.Left, cancel, confirm),
 			),
 		)
 
-	return lipgloss.Place(
-		e.width, e.height,
-		lipgloss.Center, lipgloss.Center,
-		prompt,
-	)
+	return prompt
 }
 
 func initParser() textinput.Model {
