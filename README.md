@@ -1,12 +1,15 @@
-# **Credentials Helper**
+# **Email Helper**
 
-A command-line utility program, written in Go, that sends emails containing OfficeTimer credentials to new interns. It simplifies email creation and sending by allowing users to input a CSV file and use a default email layout.
+A command-line utility program, written in Go, that sends emails containing OfficeTimer credentials to new interns. It simplifies email creation and sending by allowing users to input a CSV or XLSX file and use a default email layout.
 ## **Demo**
 
-![Credentials Helper Demo](https://i.imgur.com/colTSvk.gif)
+![Email Helper Demo](https://i.imgur.com/5pNtTiS.gif)
 
 ![Email Template](https://i.imgur.com/1fQbCEM.png)
 
+# **About**
+
+Currently, the company's process of creating and sending emails is done manually. An email template consists of only a block of text which we would simply copy and send to the respective recipient. This process becomes tedious as the company size grows; thus, additional personnel is needed for the task. The purpose of this program is to simplify this process and make email creation and sending faster, as well as give the email templates a uniform layout rather than raw text.
 
 ## **Environment Variables**
 
