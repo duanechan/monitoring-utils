@@ -1,0 +1,19 @@
+name: Deploy App
+
+on: [push]  # This workflow runs when you push to the repo
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set Up Environment
+        env:
+          SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        run: |
+          echo "SMTP email is set"
+          # Do NOT print passwords in logs
