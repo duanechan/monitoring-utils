@@ -13,7 +13,7 @@ jobs:
       - name: Set Up Environment
         env:
           SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASS }}
         run: |
           echo "SMTP email is set"
           # Do NOT print passwords in logs
