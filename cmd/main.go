@@ -3,6 +3,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -11,7 +12,11 @@ import (
 )
 
 func main() {
-	p := tea.NewProgram(model.InitializeModel())
+	name := flag.String("name", "", "the name of the recipient")
+	email := flag.String("email", "", "the email of the recipient")
+	flag.Parse()
+
+	p := tea.NewProgram(model.InitializeModel(*name, *email))
 	if _, err := p.Run(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

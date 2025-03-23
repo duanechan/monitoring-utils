@@ -19,6 +19,8 @@ type (
 	EmailModel struct {
 		cursor           int
 		selectedTemplate int
+		name             string
+		email            string
 		goodbyeMsg       string
 		goodbyes         []string
 		sendResults      []string
@@ -55,7 +57,7 @@ type (
 	}
 )
 
-func InitializeModel() EmailModel {
+func InitializeModel(rName, rEmail string) EmailModel {
 	config, err := email.LoadConfig()
 	if err != nil {
 		fmt.Printf("error loading config: %s", err)
@@ -64,6 +66,8 @@ func InitializeModel() EmailModel {
 	return EmailModel{
 		input:        initParser(),
 		progressChan: make(chan float64),
+		name:         rName,
+		email:        rEmail,
 		goodbyes: []string{
 			lipgloss.NewStyle().Bold(true).Foreground(Primary).Render("\nGoodbye! See you next time. 👋\n\n"),
 			lipgloss.NewStyle().Bold(true).Foreground(Primary).Render("\nExiting... Have a great day!\n\n"),
@@ -87,8 +91,8 @@ func InitializeModel() EmailModel {
 		mode: mode{
 			Quit:   false,
 			Help:   false,
-			Parser: true,
-			Editor: false,
+			Parser: rName == "" && rEmail == "",
+			Editor: rName != "" && rEmail != "",
 			Send:   false,
 		},
 		config: config,
@@ -96,6 +100,10 @@ func InitializeModel() EmailModel {
 }
 
 func (e EmailModel) Init() tea.Cmd {
+	if e.name != "" && e.email != "" {
+		return tea.Batch(textinput.Blink, e.handleInput)
+	}
+
 	return textinput.Blink
 }
 
@@ -169,17 +177,27 @@ func (e EmailModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case readInputMessage:
-		input := strings.ReplaceAll(e.input.Value(), "\"", "")
-		records, err := email.ParseData(input)
-		if err != nil {
-			e.err = err
-			return e, nil
+		if e.name == "" && e.email == "" {
+			input := strings.ReplaceAll(e.input.Value(), "\"", "")
+			records, err := email.ParseData(input)
+			if err != nil {
+				e.err = err
+				return e, nil
+			}
+			e.mode.Parser = false
+			e.parseResult = email.ValidateRecords(records)
+
+		} else {
+			e.parseResult = email.ValidateRecords([][]string{{
+				strings.TrimSpace(e.name),
+				strings.TrimSpace(e.email),
+			}})
+			e.name, e.email = "", ""
 		}
-		e.mode.Parser = false
-		e.parseResult = email.ValidateRecords(records)
 
 		e.input.Reset()
 		e.input.Blur()
+
 		return e, e.initializeEditor
 
 	case initializeEditor:
@@ -216,14 +234,20 @@ func (e EmailModel) View() string {
 	}
 
 	sections := []string{}
-	sections = append(sections, e.headerView())
 
 	if e.mode.Parser {
-		sections = append(
-			sections, lipgloss.NewStyle().
-				Padding(1, 1).
-				Background(lipgloss.Color("42")).
-				Render("Email Template: "+e.templates[e.selectedTemplate].name))
+		sections = append(sections, e.headerView())
+	}
+
+	sections = append(sections, "\n")
+	sections = append(
+		sections, lipgloss.NewStyle().
+			Padding(1, 1).
+			Background(lipgloss.Color("42")).
+			Render("Email: "+e.templates[e.selectedTemplate].name))
+	sections = append(sections, "\n")
+
+	if e.mode.Parser {
 		sections = append(
 			sections, lipgloss.NewStyle().
 				Padding(1, 0).
