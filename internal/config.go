@@ -24,7 +24,7 @@ func LoadConfig() (EmailConfig, error) {
 		return EmailConfig{}, fmt.Errorf("failed to load .env file")
 	}
 
-	smtpUser := os.Getenv("SMTP_USER")
+	smtpUser := os.Getenv("SMTP_EMAIL")
 	if smtpUser == "" {
 		return EmailConfig{}, fmt.Errorf("SMTP_USER environment variable not set")
 	}
