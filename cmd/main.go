@@ -8,16 +8,22 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
+	email "github.com/duanechan/monitoring-utils/email/internal"
 	"github.com/duanechan/monitoring-utils/email/internal/model"
 )
 
 func main() {
-	fmt.Println("")
-	name := flag.String("name", "", "the name of the recipient")
-	email := flag.String("email", "", "the email of the recipient")
+	rName := flag.String("name", "", "the name of the recipient")
+	rEmail := flag.String("email", "", "the email of the recipient")
 	flag.Parse()
 
-	p := tea.NewProgram(model.InitializeModel(*name, *email))
+	config, err := email.LoadConfig()
+	if err != nil {
+		fmt.Printf("error loading config: %s\n", err)
+		os.Exit(1)
+	}
+
+	p := tea.NewProgram(model.InitializeModel(*rName, *rEmail, config))
 	if _, err := p.Run(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

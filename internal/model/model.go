@@ -5,7 +5,6 @@ package model
 import (
 	"fmt"
 	"math/rand"
-	"os"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/progress"
@@ -58,12 +57,7 @@ type (
 	}
 )
 
-func InitializeModel(rName, rEmail string) EmailModel {
-	config, err := email.LoadConfig()
-	if err != nil {
-		fmt.Printf("error loading config: %s", err)
-	}
-
+func InitializeModel(rName, rEmail string, config email.EmailConfig) EmailModel {
 	return EmailModel{
 		input:        initParser(),
 		progressChan: make(chan float64),
@@ -235,9 +229,6 @@ func (e EmailModel) View() string {
 	}
 
 	sections := []string{}
-
-	sections = append(sections, "EMAIL:", os.Getenv("SMTP_EMAIL"))
-	sections = append(sections, "PASS:", os.Getenv("SMTP_PASS"))
 
 	if e.mode.Parser {
 		sections = append(sections, e.headerView())
