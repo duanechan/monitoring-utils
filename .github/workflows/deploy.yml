@@ -15,4 +15,4 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASS }}
         run: |
           echo "SMTP_EMAIL=$SMTP_EMAIL" > cmd/.env
-          echo "SMTP_PASSWORD=$SMTP_PASSWORD" >> cmd/.env
+          echo "SMTP_PASSWORD=$SMTP_PASS" >> cmd/.env
