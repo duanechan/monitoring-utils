@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+	fmt.Println("")
 	name := flag.String("name", "", "the name of the recipient")
 	email := flag.String("email", "", "the email of the recipient")
 	flag.Parse()

@@ -5,6 +5,7 @@ package model
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/progress"
@@ -234,6 +235,9 @@ func (e EmailModel) View() string {
 	}
 
 	sections := []string{}
+
+	sections = append(sections, "EMAIL:", os.Getenv("SMTP_EMAIL"))
+	sections = append(sections, "PASS:", os.Getenv("SMTP_PASS"))
 
 	if e.mode.Parser {
 		sections = append(sections, e.headerView())
